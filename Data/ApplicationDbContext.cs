@@ -16,10 +16,36 @@ namespace CarSlineAPI.Data
         // DbSets - Tablas de la base de datos
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Rol> Roles { get; set; }
+        public DbSet<Cliente> Clientes { get; set; }
+        public DbSet<Vehiculo> Vehiculos { get; set; }
+        public DbSet<TipoServicio> TiposServicio { get; set; }
+        public DbSet<ServicioExtra> ServiciosExtra { get; set; }
+        public DbSet<Orden> Ordenes { get; set; }
+        public DbSet<OrdenServicioExtra> OrdenesServiciosExtra { get; set; }
+        public DbSet<HistorialServicio> HistorialServicios { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            // Indices/constraints que coincidan con tu BD existente (ajusta si el nombre de la columna es distinto)
+            modelBuilder.Entity<Cliente>().HasIndex(c => c.TelefonoMovil).IsUnique(false);
+            modelBuilder.Entity<Vehiculo>().HasIndex(v => v.VIN).IsUnique();
+            modelBuilder.Entity<Rol>().HasIndex(r => r.NombreRol).IsUnique();
+
+            // Relaciones
+            modelBuilder.Entity<Vehiculo>()
+                .HasOne(v => v.Cliente)
+                .WithMany()
+                .HasForeignKey(v => v.ClienteId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            modelBuilder.Entity<OrdenServicioExtra>()
+                .HasOne(o => o.Orden)
+                .WithMany(o => o.ServiciosExtra)
+                .HasForeignKey(o => o.OrdenId);
+
+            // Ajustes de nombres si tu BD usa columnas con otros nombres: usar .HasColumnName("...") aquí.
 
             // ============================================
             // CONFIGURACIÓN DE USUARIO
