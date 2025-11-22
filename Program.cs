@@ -1,11 +1,20 @@
-using CarSlineAPI.Data;
+Ôªøusing CarSlineAPI.Data;
 using CarSlineAPI.Services;
 using Microsoft.EntityFrameworkCore;
+using System.Net;
+using System.Net.Sockets;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ============================================
-// CONFIGURACI”N DE SERVICIOS
+// CONFIGURACI√ìN PARA RED LOCAL
+// ============================================
+// Configurar para escuchar en todas las interfaces de red (0.0.0.0)
+// Esto permite que dispositivos en la red local se conecten
+builder.WebHost.UseUrls("http://0.0.0.0:5293");
+
+// ============================================
+// CONFIGURACI√ìN DE SERVICIOS
 // ============================================
 
 // Agregar controladores
@@ -19,16 +28,16 @@ builder.Services.AddSwaggerGen(c =>
     {
         Title = "CarSline API",
         Version = "v1",
-        Description = "API para el Sistema de GestiÛn de Taller Automotriz"
+        Description = "API para el Sistema de Gesti√≥n de Taller Automotriz"
     });
 });
 
-// Configurar la cadena de conexiÛn a MySQL
+// Configurar la cadena de conexi√≥n a MySQL
 var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 if (string.IsNullOrEmpty(connectionString))
 {
-    throw new InvalidOperationException("La cadena de conexiÛn 'DefaultConnection' no est· configurada.");
+    throw new InvalidOperationException("La cadena de conexi√≥n 'DefaultConnection' no est√° configurada.");
 }
 
 // Configurar DbContext con MySQL
@@ -47,7 +56,7 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Registrar servicios
 builder.Services.AddScoped<IAuthService, AuthService>();
 
-// Configurar CORS para permitir la comunicaciÛn con la app mÛvil
+// Configurar CORS para permitir cualquier origen (SOLO PARA DESARROLLO)
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -66,7 +75,7 @@ builder.Logging.AddDebug();
 var app = builder.Build();
 
 // ============================================
-// CONFIGURACI”N DEL PIPELINE HTTP
+// CONFIGURACI√ìN DEL PIPELINE HTTP
 // ============================================
 
 // Usar Swagger en desarrollo
@@ -76,14 +85,17 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "CarSline API v1");
-        c.RoutePrefix = string.Empty; // Swagger en la raÌz
+        c.RoutePrefix = string.Empty; // Swagger en la ra√≠z
     });
 }
 
 // Usar CORS
 app.UseCors("AllowAll");
 
-// Usar autorizaciÛn (aunque no tenemos autenticaciÛn JWT todavÌa)
+// NO usar HTTPS redirect para desarrollo local
+// app.UseHttpsRedirection();
+
+// Usar autorizaci√≥n (aunque no tenemos autenticaci√≥n JWT todav√≠a)
 app.UseAuthorization();
 
 // Mapear controladores
@@ -99,22 +111,23 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<ApplicationDbContext>();
 
-        // Verificar conexiÛn a la base de datos
+        // Verificar conexi√≥n a la base de datos
         if (await context.Database.CanConnectAsync())
         {
-            Console.WriteLine("? ConexiÛn exitosa a la base de datos");
+            Console.WriteLine("‚úÖ Conexi√≥n exitosa a la base de datos");
 
             // Aplicar migraciones pendientes (si las hay)
             var pendingMigrations = await context.Database.GetPendingMigrationsAsync();
             if (pendingMigrations.Any())
             {
-                Console.WriteLine("Aplicando migraciones pendientes...");
+                Console.WriteLine("‚è≥ Aplicando migraciones pendientes...");
                 await context.Database.MigrateAsync();
+                Console.WriteLine("‚úÖ Migraciones aplicadas correctamente");
             }
         }
         else
         {
-            Console.WriteLine("? No se pudo conectar a la base de datos");
+            Console.WriteLine("‚ùå No se pudo conectar a la base de datos");
         }
     }
     catch (Exception ex)
@@ -125,14 +138,54 @@ using (var scope = app.Services.CreateScope())
 }
 
 // ============================================
-// INICIAR LA APLICACI”N
+// OBTENER IP LOCAL DE LA LAPTOP
+// ============================================
+string GetLocalIPAddress()
+{
+    try
+    {
+        var host = Dns.GetHostEntry(Dns.GetHostName());
+        foreach (var ip in host.AddressList)
+        {
+            if (ip.AddressFamily == AddressFamily.InterNetwork)
+            {
+                return ip.ToString();
+            }
+        }
+        return "No se pudo obtener la IP";
+    }
+    catch
+    {
+        return "Error al obtener la IP";
+    }
+}
+
+var localIP = GetLocalIPAddress();
+
+// ============================================
+// INICIAR LA APLICACI√ìN
 // ============================================
 Console.WriteLine("===========================================");
-Console.WriteLine("?? CarSline API - Sistema de GestiÛn");
+Console.WriteLine("üöó CarSline API - Sistema de Gesti√≥n");
 Console.WriteLine("===========================================");
 Console.WriteLine($"Entorno: {app.Environment.EnvironmentName}");
-Console.WriteLine($"URL: http://localhost:5000");
-Console.WriteLine($"Swagger: http://localhost:5000");
+Console.WriteLine($"Escuchando en: http://0.0.0.0:5293");
+Console.WriteLine();
+Console.WriteLine("üì± PARA CONECTAR TU TEL√âFONO:");
+Console.WriteLine($"   IP de esta laptop: {localIP}");
+Console.WriteLine($"   URL para la app: http://{localIP}:5293/api");
+Console.WriteLine();
+Console.WriteLine("üåê PARA PROBAR EN NAVEGADOR:");
+Console.WriteLine($"   Desde esta laptop: http://localhost:5293");
+Console.WriteLine($"   Desde tu tel√©fono: http://{localIP}:5293");
+Console.WriteLine();
+Console.WriteLine("üìã SWAGGER (Documentaci√≥n):");
+Console.WriteLine($"   http://{localIP}:5293");
+Console.WriteLine();
+Console.WriteLine("‚ö†Ô∏è  IMPORTANTE:");
+Console.WriteLine("   1. Aseg√∫rate de que ambos dispositivos est√©n en la misma red WiFi");
+Console.WriteLine("   2. Verifica que el firewall permita el puerto 5293");
+Console.WriteLine($"   3. Actualiza ApiService.cs con: http://{localIP}:5293/api");
 Console.WriteLine("===========================================");
 
 app.Run();
