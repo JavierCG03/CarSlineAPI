@@ -165,27 +165,15 @@ var localIP = GetLocalIPAddress();
 // ============================================
 // INICIAR LA APLICACIÓN
 // ============================================
-Console.WriteLine("===========================================");
-Console.WriteLine("🚗 CarSline API - Sistema de Gestión");
-Console.WriteLine("===========================================");
 Console.WriteLine($"Entorno: {app.Environment.EnvironmentName}");
 Console.WriteLine($"Escuchando en: http://0.0.0.0:5293");
 Console.WriteLine();
-Console.WriteLine("📱 PARA CONECTAR TU TELÉFONO:");
-Console.WriteLine($"   IP de esta laptop: {localIP}");
-Console.WriteLine($"   URL para la app: http://{localIP}:5293/api");
+Console.WriteLine("        📱 Coneccion Movil:");
+Console.WriteLine($"IP de este ordenador : {localIP}");
+Console.WriteLine($"URL para la app: http://{localIP}:5293/api");
 Console.WriteLine();
-Console.WriteLine("🌐 PARA PROBAR EN NAVEGADOR:");
-Console.WriteLine($"   Desde esta laptop: http://localhost:5293");
-Console.WriteLine($"   Desde tu teléfono: http://{localIP}:5293");
-Console.WriteLine();
-Console.WriteLine("📋 SWAGGER (Documentación):");
-Console.WriteLine($"   http://{localIP}:5293");
-Console.WriteLine();
-Console.WriteLine("⚠️  IMPORTANTE:");
-Console.WriteLine("   1. Asegúrate de que ambos dispositivos estén en la misma red WiFi");
-Console.WriteLine("   2. Verifica que el firewall permita el puerto 5293");
-Console.WriteLine($"   3. Actualiza ApiService.cs con: http://{localIP}:5293/api");
+Console.WriteLine("    🌐 Verificacion en navegador:");
+Console.WriteLine($" Desde tu teléfono: http://{localIP}:5293");
 Console.WriteLine("===========================================");
 
 app.Run();

@@ -1,5 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using CarSlineAPI.Models;
+using CarSlineAPI.Models.Entities;
 
 namespace CarSlineAPI.Data
 {
@@ -50,6 +50,7 @@ namespace CarSlineAPI.Data
             // ============================================
             // CONFIGURACIÓN DE USUARIO
             // ============================================
+
             modelBuilder.Entity<Usuario>(entity =>
             {
                 // Índice único en NombreUsuario
@@ -101,5 +102,5 @@ namespace CarSlineAPI.Data
                     .HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
         }
-    }
+     }
 }

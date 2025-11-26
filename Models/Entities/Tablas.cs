@@ -1,15 +1,12 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace CarSlineAPI.Models
+namespace CarSlineAPI.Models.Entities
 {
     // ============================================
     // ENTIDADES DE BASE DE DATOS
     // ============================================
 
-    /// <summary>
-    /// Modelo de Rol - Tipos de usuario del sistema
-    /// </summary>
     [Table("roles")]
     public class Rol
     {
@@ -29,9 +26,7 @@ namespace CarSlineAPI.Models
         public virtual ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
     }
 
-    /// <summary>
-    /// Modelo de Usuario - Usuarios del sistema
-    /// </summary>
+
     [Table("usuarios")]
     public class Usuario
     {
@@ -273,130 +268,7 @@ namespace CarSlineAPI.Models
 
         public decimal CostoTotal { get; set; }
     }
-    // ============================================
-    // DTOs - DATA TRANSFER OBJECTS
-    // ============================================
-
-    /// <summary>
-    /// DTO para solicitud de login
-    /// </summary>
-    public class LoginRequest
-    {
-        [Required(ErrorMessage = "El nombre de usuario es requerido")]
-        public string NombreUsuario { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "La contraseña es requerida")]
-        [MinLength(6, ErrorMessage = "La contraseña debe tener al menos 6 caracteres")]
-        public string Password { get; set; } = string.Empty;
-    }
-
-    /// <summary>
-    /// DTO para crear usuario (solo Admin)
-    /// </summary>
-    public class CrearUsuarioRequest
-    {
-        [Required(ErrorMessage = "El nombre completo es requerido")]
-        [MaxLength(150)]
-        public string NombreCompleto { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "El nombre de usuario es requerido")]
-        [MaxLength(50)]
-        public string NombreUsuario { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "La contraseña es requerida")]
-        [MinLength(6, ErrorMessage = "La contraseña debe tener al menos 6 caracteres")]
-        public string Password { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "El rol es requerido")]
-        [Range(2, 5, ErrorMessage = "El rol debe ser entre 2 y 5 (no puede crear administradores)")]
-        public int RolId { get; set; }
-    }
-
-    /// <summary>
-    /// DTO para respuesta de autenticación
-    /// </summary>
-    public class AuthResponse
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public UsuarioDto? Usuario { get; set; }
-        public string? Token { get; set; }
-    }
-
-    /// <summary>
-    /// DTO del usuario (sin información sensible)
-    /// </summary>
-    public class UsuarioDto
-    {
-        public int Id { get; set; }
-        public string NombreCompleto { get; set; } = string.Empty;
-        public string NombreUsuario { get; set; } = string.Empty;
-        public int RolId { get; set; }
-        public string NombreRol { get; set; } = string.Empty;
-        public string? DescripcionRol { get; set; }
-        public DateTime FechaCreacion { get; set; }
-        public DateTime? UltimoAcceso { get; set; }
-    }
-
-    /// <summary>
-    /// DTO para respuesta de crear usuario
-    /// </summary>
-    public class CrearUsuarioResponse
-    {
-        public bool Success { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public UsuarioDto? Usuario { get; set; }
-    }
-
-    /// <summary>
-    /// DTO para información de rol
-    /// </summary>
-    public class RolDto
-    {
-        public int Id { get; set; }
-        public string NombreRol { get; set; } = string.Empty;
-        public string? Descripcion { get; set; }
-    }
-
-    public class ClienteRequest
-    {
-        public string NombreCompleto { get; set; } = string.Empty;
-        public string TelefonoMovil { get; set; } = string.Empty;
-        public string? TelefonoCasa { get; set; }
-        public string? CorreoElectronico { get; set; }
-        public string? Colonia { get; set; }
-        public string? Calle { get; set; }
-        public string? NumeroExterior { get; set; }
-        public string? Municipio { get; set; }
-        public string? Estado { get; set; }
-        public string? Pais { get; set; }
-        public string? CodigoPostal { get; set; }
-    }
-
-    public class VehiculoRequest
-    {
-        public int ClienteId { get; set; }
-        public string VIN { get; set; } = string.Empty;
-        public string? Marca { get; set; }
-        public string? Modelo { get; set; }
-        public int? Anio { get; set; }
-        public string? Color { get; set; }
-        public string? Placas { get; set; }
-        public int KilometrajeInicial { get; set; }
-    }
-
-    public class CrearOrdenRequest
-    {
-        public int TipoOrdenId { get; set; }
-        public int ClienteId { get; set; }
-        public int VehiculoId { get; set; }
-        public int? TipoServicioId { get; set; }
-        public int KilometrajeActual { get; set; }
-        public DateTime FechaHoraPromesaEntrega { get; set; }
-        public string? ObservacionesAsesor { get; set; }
-        public List<int>? ServiciosExtraIds { get; set; }
-    }
-
-
 
 }
+
+

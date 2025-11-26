@@ -1,6 +1,7 @@
 ﻿using CarSlineAPI.Data;
-using CarSlineAPI.Models;
+using CarSlineAPI.Models.Entities;
 using Microsoft.EntityFrameworkCore;
+using CarSlineAPI.Models.DTOs;
 
 namespace CarSlineAPI.Services
 {
