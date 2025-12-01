@@ -5,6 +5,7 @@ namespace CarSlineAPI.Models.DTOs
     public class ClienteRequest
     {
         public string NombreCompleto { get; set; } = string.Empty;
+        public string RFC { get; set; } = string.Empty;
         public string TelefonoMovil { get; set; } = string.Empty;
         public string? TelefonoCasa { get; set; }
         public string? CorreoElectronico { get; set; }
@@ -15,6 +16,13 @@ namespace CarSlineAPI.Models.DTOs
         public string? Estado { get; set; }
         public string? Pais { get; set; }
         public string? CodigoPostal { get; set; }
+    }
+
+    public class ClienteResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public int? ClienteId { get; set; }
     }
 
 }

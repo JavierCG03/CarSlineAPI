@@ -11,4 +11,10 @@
         public string? Placas { get; set; }
         public int KilometrajeInicial { get; set; }
     }
+    public class VehiculoResponse
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public int? VehiculoId { get; set; }
+    }
 }

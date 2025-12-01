@@ -50,6 +50,62 @@ namespace CarSlineAPI.Controllers
             }
         }
 
+        [HttpPut("actualizar-placas/{id}")]
+        [ProducesResponseType(typeof(VehiculoResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> ActualizarPlacasVehiculo(int id, [FromBody] VehiculoRequest req)
+        {
+            if (string.IsNullOrWhiteSpace(req.Placas))
+            {
+                return BadRequest(new VehiculoResponse
+                {
+                    Success = false,
+                    Message = "Las placas son requeridas"
+                });
+            }
+
+            try
+            {
+                // Buscar el vehículo existente
+                var vehiculo = await _db.Vehiculos.FindAsync(id);
+
+                if (vehiculo == null || !vehiculo.Activo)
+                {
+                    _logger.LogWarning($"Vehículo con ID {id} no encontrado");
+                    return NotFound(new VehiculoResponse
+                    {
+                        Success = false,
+                        Message = "Vehículo no encontrado"
+                    });
+                }
+
+                // Actualizar solo las placas
+                vehiculo.Placas = req.Placas.ToUpperInvariant();
+
+                await _db.SaveChangesAsync();
+
+                _logger.LogInformation($"Placas del vehículo ID {id} actualizadas a: {vehiculo.Placas}");
+
+                return Ok(new VehiculoResponse
+                {
+                    Success = true,
+                    Message = "Placas actualizadas exitosamente",
+                    VehiculoId = vehiculo.Id
+                });
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, $"Error al actualizar placas del vehículo ID {id}");
+                return StatusCode(500, new VehiculoResponse
+                {
+                    Success = false,
+                    Message = "Error al actualizar placas"
+                });
+            }
+        }
+
         [HttpGet("buscar-vin/{vin}")]
         public async Task<IActionResult> BuscarPorVIN(string vin)
         {

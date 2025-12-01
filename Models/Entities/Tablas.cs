@@ -73,6 +73,9 @@ namespace CarSlineAPI.Models.Entities
         [Required, MaxLength(250)]
         public string NombreCompleto { get; set; } = string.Empty;
 
+        [Required, MaxLength(20)]
+        public string RFC { get; set; } = string.Empty;
+
         [Required, MaxLength(50)]
         public string TelefonoMovil { get; set; } = string.Empty;
 
