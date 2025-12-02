@@ -22,7 +22,8 @@ namespace CarSlineAPI.Controllers
         [HttpPost("crear")]
         public async Task<IActionResult> CrearVehiculo([FromBody] VehiculoRequest req)
         {
-            if (!ModelState.IsValid) return BadRequest(new { Success = false, Message = "Datos inválidos" });
+            if (!ModelState.IsValid)
+                return BadRequest(new { Success = false, Message = "Datos inválidos" });
 
             var veh = new Vehiculo
             {
@@ -68,7 +69,6 @@ namespace CarSlineAPI.Controllers
 
             try
             {
-                // Buscar el vehículo existente
                 var vehiculo = await _db.Vehiculos.FindAsync(id);
 
                 if (vehiculo == null || !vehiculo.Activo)
@@ -81,9 +81,7 @@ namespace CarSlineAPI.Controllers
                     });
                 }
 
-                // Actualizar solo las placas
                 vehiculo.Placas = req.Placas.ToUpperInvariant();
-
                 await _db.SaveChangesAsync();
 
                 _logger.LogInformation($"Placas del vehículo ID {id} actualizadas a: {vehiculo.Placas}");
@@ -106,6 +104,9 @@ namespace CarSlineAPI.Controllers
             }
         }
 
+        /// <summary>
+        /// MANTENER: Buscar por VIN completo (17 caracteres)
+        /// </summary>
         [HttpGet("buscar-vin/{vin}")]
         public async Task<IActionResult> BuscarPorVIN(string vin)
         {
@@ -114,7 +115,8 @@ namespace CarSlineAPI.Controllers
                 .Where(v => v.VIN == vin.ToUpperInvariant() && v.Activo)
                 .FirstOrDefaultAsync();
 
-            if (veh == null) return Ok(new { Success = false, Message = "Vehículo no encontrado" });
+            if (veh == null)
+                return Ok(new { Success = false, Message = "Vehículo no encontrado" });
 
             return Ok(new
             {
@@ -133,6 +135,134 @@ namespace CarSlineAPI.Controllers
                     NombreCliente = veh.Cliente?.NombreCompleto ?? ""
                 }
             });
+        }
+
+        /// <summary>
+        /// NUEVO: Buscar vehículos por los últimos 4 dígitos del VIN
+        /// Retorna lista si hay múltiples coincidencias
+        /// </summary>
+        [HttpGet("buscar-vin-ultimos/{ultimos4}")]
+        [ProducesResponseType(typeof(BuscarVehiculosResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> BuscarPorUltimos4VIN(string ultimos4)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(ultimos4) || ultimos4.Length != 4)
+                {
+                    return Ok(new BuscarVehiculosResponse
+                    {
+                        Success = false,
+                        Message = "Debes ingresar exactamente 4 caracteres",
+                        Vehiculos = new List<VehiculoDto>()
+                    });
+                }
+
+                string ultimos4Upper = ultimos4.ToUpperInvariant();
+
+                // Buscar vehículos cuyo VIN termine en los 4 caracteres especificados
+                var vehiculos = await _db.Vehiculos
+                    .Include(v => v.Cliente)
+                    .Where(v => v.Activo && v.VIN.EndsWith(ultimos4Upper))
+                    .OrderBy(v => v.Marca)
+                    .ThenBy(v => v.Modelo)
+                    .Take(20) // Limitar resultados
+                    .Select(v => new VehiculoDto
+                    {
+                        Id = v.Id,
+                        ClienteId = v.ClienteId,
+                        VIN = v.VIN,
+                        Marca = v.Marca ?? "",
+                        Modelo = v.Modelo ?? "",
+                        Anio = v.Anio ?? 0,
+                        Color = v.Color ?? "",
+                        Placas = v.Placas ?? "",
+                        KilometrajeInicial = v.KilometrajeInicial,
+                        NombreCliente = v.Cliente != null ? v.Cliente.NombreCompleto : ""
+                    })
+                    .ToListAsync();
+
+                if (!vehiculos.Any())
+                {
+                    return Ok(new BuscarVehiculosResponse
+                    {
+                        Success = false,
+                        Message = $"No se encontraron vehículos con VIN terminado en '{ultimos4Upper}'",
+                        Vehiculos = new List<VehiculoDto>()
+                    });
+                }
+
+                return Ok(new BuscarVehiculosResponse
+                {
+                    Success = true,
+                    Message = $"Se encontraron {vehiculos.Count} vehículo(s)",
+                    Vehiculos = vehiculos
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al buscar vehículos por últimos 4 VIN: {ultimos4}");
+                return StatusCode(500, new BuscarVehiculosResponse
+                {
+                    Success = false,
+                    Message = "Error al buscar vehículos",
+                    Vehiculos = new List<VehiculoDto>()
+                });
+            }
+        }
+
+        /// <summary>
+        /// NUEVO: Obtener vehículo por ID (para cargar datos después de seleccionar de la lista)
+        /// </summary>
+        [HttpGet("{id}")]
+        [ProducesResponseType(typeof(VehiculoResponse), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ObtenerVehiculoPorId(int id)
+        {
+            try
+            {
+                var vehiculo = await _db.Vehiculos
+                    .Include(v => v.Cliente)
+                    .Where(v => v.Id == id && v.Activo)
+                    .FirstOrDefaultAsync();
+
+                if (vehiculo == null)
+                {
+                    return NotFound(new VehiculoResponse
+                    {
+                        Success = false,
+                        Message = "Vehículo no encontrado"
+                    });
+                }
+
+                return Ok(new VehiculoResponse
+                {
+                    Success = true,
+                    Message = "Vehículo encontrado",
+                    VehiculoId = vehiculo.Id,
+                    Vehiculo = new VehiculoDto
+                    {
+                        Id = vehiculo.Id,
+                        ClienteId = vehiculo.ClienteId,
+                        VIN = vehiculo.VIN,
+                        Marca = vehiculo.Marca ?? "",
+                        Modelo = vehiculo.Modelo ?? "",
+                        Anio = vehiculo.Anio ?? 0,
+                        Color = vehiculo.Color ?? "",
+                        Placas = vehiculo.Placas ?? "",
+                        KilometrajeInicial = vehiculo.KilometrajeInicial,
+                        NombreCliente = vehiculo.Cliente?.NombreCompleto ?? ""
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al obtener vehículo ID {id}");
+                return StatusCode(500, new VehiculoResponse
+                {
+                    Success = false,
+                    Message = "Error al obtener vehículo"
+                });
+            }
         }
     }
 }

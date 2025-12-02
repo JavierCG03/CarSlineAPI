@@ -19,6 +19,71 @@ namespace CarSlineAPI.Controllers
             _logger = logger;
         }
 
+        /// <summary>
+        /// NUEVO: Obtener historial de servicios de un vehículo (últimos 6 meses)
+        /// </summary>
+        [HttpGet("historial-vehiculo/{vehiculoId}")]
+        [ProducesResponseType(typeof(HistorialVehiculoResponse), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ObtenerHistorialVehiculo(int vehiculoId)
+        {
+            try
+            {
+                // Calcular fecha de hace 6 meses
+                var fechaLimite = DateTime.Now.AddMonths(-6);
+
+                var historial = await _db.Ordenes
+                    .Include(o => o.TipoServicio)
+                    .Include(o => o.ServiciosExtra)
+                        .ThenInclude(se => se.ServicioExtra)
+                    .Where(o => o.VehiculoId == vehiculoId
+                             && o.Activo
+                             && o.EstadoOrdenId == 4 // Solo órdenes entregadas
+                             && o.FechaCreacion >= fechaLimite)
+                    .OrderByDescending(o => o.FechaCreacion)
+                    .Select(o => new HistorialServicioDto
+                    {
+                        NumeroOrden = o.NumeroOrden,
+                        FechaServicio = o.FechaCreacion,
+                        TipoServicio = o.TipoServicio != null ? o.TipoServicio.NombreServicio : "Servicio General",
+                        KilometrajeRegistrado = o.KilometrajeActual,
+                        CostoTotal = o.CostoTotal,
+                        ServiciosExtra = o.ServiciosExtra.Select(se => new ServicioExtraHistorialDto
+                        {
+                            NombreServicio = se.ServicioExtra != null ? se.ServicioExtra.NombreServicio : "",
+                            Precio = se.PrecioAplicado
+                        }).ToList(),
+                        ObservacionesAsesor = o.ObservacionesAsesor ?? ""
+                    })
+                    .ToListAsync();
+
+                // Calcular estadísticas
+                var totalServicios = historial.Count;
+                var costoPromedio = historial.Any() ? historial.Average(h => h.CostoTotal) : 0;
+                var ultimoServicio = historial.FirstOrDefault();
+
+                return Ok(new HistorialVehiculoResponse
+                {
+                    Success = true,
+                    Message = $"Se encontraron {totalServicios} servicio(s) en los últimos 6 meses",
+                    Historial = historial,
+                    TotalServicios = totalServicios,
+                    CostoPromedio = costoPromedio,
+                    UltimoKilometraje = ultimoServicio?.KilometrajeRegistrado ?? 0,
+                    UltimaFechaServicio = ultimoServicio?.FechaServicio
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error al obtener historial del vehículo {vehiculoId}");
+                return StatusCode(500, new HistorialVehiculoResponse
+                {
+                    Success = false,
+                    Message = "Error al obtener historial del vehículo",
+                    Historial = new List<HistorialServicioDto>()
+                });
+            }
+        }
+
         [HttpPost("crear")]
         public async Task<IActionResult> CrearOrden([FromBody] CrearOrdenRequest request, [FromHeader(Name = "X-User-Id")] int asesorId)
         {
@@ -137,6 +202,7 @@ namespace CarSlineAPI.Controllers
                 }
             });
         }
+
         [HttpGet("asesor/{tipoOrdenId}")]
         public async Task<IActionResult> ObtenerOrdenesPorTipo(int tipoOrdenId, [FromHeader(Name = "X-User-Id")] int asesorId)
         {
@@ -144,7 +210,6 @@ namespace CarSlineAPI.Controllers
                 .Include(o => o.Cliente)
                 .Include(o => o.Vehiculo)
                 .Include(o => o.TipoServicio)
-                //.Include(o => o.Tecnico)
                 .Where(o => o.TipoOrdenId == tipoOrdenId
                          && o.AsesorId == asesorId
                          && o.Activo
@@ -161,9 +226,8 @@ namespace CarSlineAPI.Controllers
                     HoraInicio = o.FechaInicioProceso.HasValue ? o.FechaInicioProceso.Value.ToString("HH:mm") : "-",
                     HoraFin = o.FechaFinalizacion.HasValue ? o.FechaFinalizacion.Value.ToString("HH:mm") : "-",
                     TipoServicio = o.TipoServicio != null ? o.TipoServicio.NombreServicio : "Sin servicio",
-                    //NombreTecnico = o.Tecnico != null ? o.Tecnico.NombreCompleto : "Sin asignar",
                     o.CostoTotal,
-                    EstadoId = o.EstadoOrdenId  // ⭐ Mapeo clave
+                    EstadoId = o.EstadoOrdenId
                 })
                 .ToListAsync();
 
@@ -190,60 +254,10 @@ namespace CarSlineAPI.Controllers
             if (orden == null) return NotFound(new { Success = false, Message = "Orden no encontrada" });
 
             orden.EstadoOrdenId = 4;
-            orden.Activo = false;
+            orden.FechaEntrega = DateTime.Now;
             await _db.SaveChangesAsync();
 
             return Ok(new { Success = true, Message = "Orden Entregada" });
         }
-
-        /*
-        [HttpPut("entregar/{ordenId}")]
-        public async Task<IActionResult> EntregarOrden(int ordenId)
-        {
-            await using var tx = await _db.Database.BeginTransactionAsync();
-            try
-            {
-                var orden = await _db.Ordenes.FindAsync(ordenId);
-                if (orden == null) return NotFound(new { Success = false, Message = "Orden no encontrada" });
-
-                orden.EstadoOrdenId = 4;
-                orden.FechaEntrega = DateTime.Now;
-                await _db.SaveChangesAsync();
-                
-                if (orden.TipoServicioId.HasValue)
-                {
-                    // lógica para calcular próximo servicio — aquí llamamos una función simple de ejemplo.
-                    // Si tienes un stored procedure en BD, lo puedes reproducir aquí.
-                    int proximoKm = orden.KilometrajeActual + 10000; // ejemplo
-                    DateTime? proximaFecha = DateTime.Now.AddMonths(6);
-
-                    var historial = new HistorialServicio
-                    {
-                        VehiculoId = orden.VehiculoId,
-                        OrdenId = orden.Id,
-                        TipoServicioId = orden.TipoServicioId.Value,
-                        KilometrajeRegistrado = orden.KilometrajeActual,
-                        FechaServicio = DateTime.Now,
-                        ProximoServicioKm = proximoKm,
-                        ProximoServicioFecha = proximaFecha,
-                        CostoTotal = orden.CostoTotal
-                    };
-                    _db.HistorialServicios.Add(historial);
-                    await _db.SaveChangesAsync();
-                }
-                
-                await tx.CommitAsync();
-                return Ok(new { Success = true, Message = "Vehículo entregado y registrado en historial" });
-            }
-            catch (Exception ex)
-            {
-                await tx.RollbackAsync();
-                _logger.LogError(ex, "Error al entregar orden");
-                return StatusCode(500, new { Success = false, Message = "Error al entregar orden" });
-            }
-        
-        }
-        */
     }
-
 }
