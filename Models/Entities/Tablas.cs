@@ -123,6 +123,8 @@ namespace CarSlineAPI.Models.Entities
 
         [MaxLength(100)]
         public string? Marca { get; set; }
+        [MaxLength(100)]
+        public string? Version { get; set; }
 
         [MaxLength(100)]
         public string? Modelo { get; set; }
@@ -143,6 +145,7 @@ namespace CarSlineAPI.Models.Entities
         [ForeignKey("ClienteId")]
         public Cliente? Cliente { get; set; }
     }
+
 
     [Table("TiposServicio")]
     public class TipoServicio
@@ -272,6 +275,37 @@ namespace CarSlineAPI.Models.Entities
         public decimal CostoTotal { get; set; }
     }
 
+    [Table("refacciones")]
+    public class Refaccion
+    {
+        [Key]
+        public int Id { get; set; }
+
+        [Required]
+        [MaxLength(50)]
+        public string NumeroParte { get; set; } = string.Empty;
+
+        [Required]
+        [MaxLength(100)]
+        public string TipoRefaccion { get; set; } = string.Empty;
+
+        [MaxLength(50)]
+        public string? MarcaVehiculo { get; set; }
+
+        [MaxLength(50)]
+        public string? Modelo { get; set; }
+
+        public int? Anio { get; set; }
+
+        [Required]
+        public int Cantidad { get; set; }
+
+        public DateTime FechaRegistro { get; set; } = DateTime.Now;
+
+        public DateTime FechaUltimaModificacion { get; set; } = DateTime.Now;
+
+        public bool Activo { get; set; } = true;
+    }
 }
 
 

@@ -6,6 +6,7 @@
         public string VIN { get; set; } = string.Empty;
         public string? Marca { get; set; }
         public string? Modelo { get; set; }
+        public string? Version { get; set; }
         public int? Anio { get; set; }
         public string? Color { get; set; }
         public string? Placas { get; set; }
@@ -25,6 +26,7 @@
         public string VIN { get; set; } = string.Empty;
         public string Marca { get; set; } = string.Empty;
         public string Modelo { get; set; } = string.Empty;
+        public string Version { get; set; } = string.Empty;
         public int Anio { get; set; }
         public string Color { get; set; } = string.Empty;
         public string Placas { get; set; } = string.Empty;

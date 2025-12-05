@@ -23,6 +23,7 @@ namespace CarSlineAPI.Data
         public DbSet<Orden> Ordenes { get; set; }
         public DbSet<OrdenServicioExtra> OrdenesServiciosExtra { get; set; }
         public DbSet<HistorialServicio> HistorialServicios { get; set; }
+        public DbSet<Refaccion> Refacciones { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

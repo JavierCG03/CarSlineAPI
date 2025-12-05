@@ -18,19 +18,26 @@ namespace CarSlineAPI.Controllers
             _db = db;
             _logger = logger;
         }
-
         [HttpPost("crear")]
         public async Task<IActionResult> CrearVehiculo([FromBody] VehiculoRequest req)
         {
             if (!ModelState.IsValid)
                 return BadRequest(new { Success = false, Message = "Datos inválidos" });
 
+            var vin = req.VIN?.ToUpperInvariant();
+
+            // ✅ Verificación previa
+            var existeVin = await _db.Vehiculos.AnyAsync(v => v.VIN == vin);
+            if (existeVin)
+                return BadRequest(new { Success = false, Message = "El VIN ya está registrado, usa el buscador" });
+
             var veh = new Vehiculo
             {
                 ClienteId = req.ClienteId,
-                VIN = req.VIN?.ToUpperInvariant() ?? string.Empty,
+                VIN = vin ?? string.Empty,
                 Marca = req.Marca,
                 Modelo = req.Modelo,
+                Version = req.Version,
                 Anio = req.Anio,
                 Color = req.Color,
                 Placas = req.Placas?.ToUpperInvariant(),
@@ -50,7 +57,6 @@ namespace CarSlineAPI.Controllers
                 return StatusCode(500, new { Success = false, Message = "Error al registrar vehículo" });
             }
         }
-
         [HttpPut("actualizar-placas/{id}")]
         [ProducesResponseType(typeof(VehiculoResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -127,6 +133,7 @@ namespace CarSlineAPI.Controllers
                     veh.ClienteId,
                     veh.VIN,
                     veh.Marca,
+                    veh.Version,
                     veh.Modelo,
                     veh.Anio,
                     veh.Color,
@@ -165,7 +172,7 @@ namespace CarSlineAPI.Controllers
                     .Where(v => v.Activo && v.VIN.EndsWith(ultimos4Upper))
                     .OrderBy(v => v.Marca)
                     .ThenBy(v => v.Modelo)
-                    .Take(20) // Limitar resultados
+                    .Take(10) // Limitar resultados
                     .Select(v => new VehiculoDto
                     {
                         Id = v.Id,
@@ -173,6 +180,7 @@ namespace CarSlineAPI.Controllers
                         VIN = v.VIN,
                         Marca = v.Marca ?? "",
                         Modelo = v.Modelo ?? "",
+                        Version = v.Version ?? "",
                         Anio = v.Anio ?? 0,
                         Color = v.Color ?? "",
                         Placas = v.Placas ?? "",
@@ -246,6 +254,7 @@ namespace CarSlineAPI.Controllers
                         VIN = vehiculo.VIN,
                         Marca = vehiculo.Marca ?? "",
                         Modelo = vehiculo.Modelo ?? "",
+                        Version = vehiculo.Version ?? "",
                         Anio = vehiculo.Anio ?? 0,
                         Color = vehiculo.Color ?? "",
                         Placas = vehiculo.Placas ?? "",
